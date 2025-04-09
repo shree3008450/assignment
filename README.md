@@ -1,47 +1,37 @@
-package com.kyc.service.impl;
+package com.kyc.controller;
 
 import com.kyc.dto.CustomerDto;
+import com.kyc.dto.KycRequestDto;
 import com.kyc.dto.KycResponseDto;
-import com.kyc.exception.ResourceNotFoundException;
-import com.kyc.model.Customer;
-import com.kyc.model.KycApplication;
-import com.kyc.repository.CustomerRepository;
-import com.kyc.repository.KycRepository;
 import com.kyc.service.CustomerService;
+import com.kyc.service.KycService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.*;
 
-@Service
-public class CustomerServiceImpl implements CustomerService {
-
-    @Autowired
-    private CustomerRepository customerRepository;
+@RestController
+@RequestMapping("/api/customer")
+public class CustomerController {
 
     @Autowired
-    private KycRepository kycRepository;
+    private CustomerService customerService;
 
-    @Override
-    public void registerCustomer(CustomerDto dto) {
-        Customer customer = new Customer();
-        customer.setName(dto.getName());
-        customer.setEmail(dto.getEmail());
-        customer.setAddress(dto.getAddress());
-        customer.setPhoneNumber(dto.getPhoneNumber());
-        customer.setDateOfBirth(dto.getDateOfBirth());
+    @Autowired
+    private KycService kycService;
 
-        customerRepository.save(customer);
+    @PostMapping("/register")
+    public String register(@RequestBody CustomerDto dto) {
+        customerService.registerCustomer(dto);
+        return "Customer registered";
     }
 
-    @Override
-    public KycResponseDto getKycStatus(Long customerId) {
-        KycApplication kyc = kycRepository.findByCustomerId(customerId)
-                .orElseThrow(() -> new ResourceNotFoundException("KYC not found"));
+    @PostMapping("/submit-kyc")
+    public String submitKyc(@RequestBody KycRequestDto dto) {
+        kycService.submitKyc(dto);
+        return "KYC submitted";
+    }
 
-        KycResponseDto dto = new KycResponseDto();
-        dto.setId(kyc.getId());
-        dto.setStatus(kyc.getStatus());
-        dto.setDocumentPath(kyc.getDocumentPath());
-        dto.setSubmittedAt(kyc.getSubmittedAt());
-        return dto;
+    @GetMapping("/kyc-status/{customerId}")
+    public KycResponseDto getKycStatus(@PathVariable Long customerId) {
+        return customerService.getKycStatus(customerId);
     }
 }
