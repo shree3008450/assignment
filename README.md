@@ -1,24 +1,33 @@
-package com.example.kyc.config; // make sure this matches your package name
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+@Injectable({
+  providedIn: 'root'
+})
+export class KycService {
 
-@Configuration
-public class WebConfig {
+  private baseUrl = 'http://localhost:8080/api'; // update if needed
 
-    @Bean
-    public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:4200")
-                        .allowedMethods("*")
-                        .allowedHeaders("*")
-                        .allowCredentials(true);
-            }
-        };
-    }
+  constructor(private http: HttpClient) {}
+
+  registerCustomer(customerData: any): Observable<any> {
+    return this.http.post(`${this.baseUrl}/customers`, customerData);
+  }
+
+  submitKyc(formData: FormData): Observable<any> {
+    return this.http.post(`${this.baseUrl}/kyc`, formData);
+  }
+
+  getKycStatus(customerId: number): Observable<any> {
+    return this.http.get(`${this.baseUrl}/kyc/status/${customerId}`);
+  }
+
+  getAllKycApplications(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/admin/kyc`);
+  }
+
+  updateKycStatus(id: number, status: string): Observable<any> {
+    return this.http.put(`${this.baseUrl}/admin/kyc/${id}?status=${status}`, {});
+  }
 }
