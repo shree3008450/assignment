@@ -1,14 +1,14 @@
-// src/app/app.routes.ts
-import { Routes } from '@angular/router';
-import { CustomerRegisterComponent } from './customer-register/customer-register.component';
-import { KycFormComponent } from './kyc-form/kyc-form.component';
-import { KycStatusComponent } from './kyc-status/kyc-status.component';
-import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.component';
+// src/main.ts
+import { bootstrapApplication } from '@angular/platform-browser';
+import { provideRouter } from '@angular/router';
+import { routes } from './app/app.routes';
+import { AppComponent } from './app/app.component';
+import { importProvidersFrom } from '@angular/core';
+import { HttpClientModule } from '@angular/common/http';
 
-export const routes: Routes = [
-  { path: '', redirectTo: 'register', pathMatch: 'full' },
-  { path: 'register', component: CustomerRegisterComponent },
-  { path: 'submit-kyc', component: KycFormComponent },
-  { path: 'kyc-status', component: KycStatusComponent },
-  { path: 'admin-dashboard', component: AdminDashboardComponent },
-];
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideRouter(routes),
+    importProvidersFrom(HttpClientModule)
+  ]
+}).catch(err => console.error(err));
