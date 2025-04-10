@@ -1,59 +1,38 @@
-import { Component, OnInit } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
-@Component({
-  selector: 'app-kyc-form',
-  standalone: true,
-  templateUrl: './kyc-form.component.html',
-  styleUrls: ['./kyc-form.component.css'],
+@Injectable({
+  providedIn: 'root'
 })
-export class KycFormComponent implements OnInit {
-  selectedFile!: File;
-  customerId!: number;
+export class KycService {
+
+  private baseUrl = 'http://localhost:8080/api/customer'; // ✅ match your backend @RequestMapping
 
   constructor(private http: HttpClient) {}
 
-  ngOnInit(): void {
-    const storedId = localStorage.getItem('customerId');
-    if (storedId) {
-      this.customerId = +storedId;
-    } else {
-      console.error('No customerId found in localStorage');
-    }
+  // ✅ Customer Registration
+  registerCustomer(customerData: any): Observable<any> {
+    return this.http.post(`${this.baseUrl}/register`, customerData);
   }
 
-  onFileSelected(event: any): void {
-    this.selectedFile = event.target.files[0];
+  // ✅ Submit KYC (with file upload)
+  submitKyc(formData: FormData): Observable<any> {
+    return this.http.post(`${this.baseUrl}/submit-kyc`, formData);
   }
 
-  submitKyc(): void {
-    if (!this.selectedFile || !this.customerId) {
-      console.warn('File or Customer ID missing');
-      return;
-    }
+  // ✅ Get KYC status for a customer
+  getKycStatus(customerId: number): Observable<any> {
+    return this.http.get(`${this.baseUrl}/kyc-status/${customerId}`);
+  }
 
-    const formData = new FormData();
-    formData.append('file', this.selectedFile);
-    formData.append('customerId', this.customerId.toString());
+  // ✅ Admin: Fetch all pending KYC applications
+  getAllKycApplications(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/pending`);
+  }
 
-    this.http.post('http://localhost:8080/api/customer/submit-kyc', formData)
-      .subscribe({
-        next: (response) => {
-          console.log('KYC submitted', response);
-        },
-        error: (error) => {
-          console.error('Submission failed', error);
-        }
-      });
+  // ✅ Admin: Approve or Reject KYC by application ID
+  updateKycStatus(id: number, status: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/${status}/${id}`, {}); // POST to /approve/{id} or /reject/{id}
   }
 }
-<div class="container mt-3">
-  <h3>Submit KYC</h3>
-
-  <div class="mb-3">
-    <label for="file" class="form-label">Upload Document</label>
-    <input type="file" id="file" (change)="onFileSelected($event)" class="form-control">
-  </div>
-
-  <button (click)="submitKyc()" class="btn btn-primary">Submit</button>
-</div>
