@@ -1,17 +1,3 @@
-import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
-
-@Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [RouterModule],
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
-})
-export class AppComponent {}
-
-
-
 <div class="container mt-4">
   <h1 class="text-center mb-4">KYC Management System</h1>
   <div class="mb-4 text-center">
