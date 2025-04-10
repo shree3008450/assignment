@@ -1,35 +1,3 @@
-import { Component } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-
-@Component({
-  selector: 'app-kyc-form',
-  standalone: true,
-  templateUrl: './kyc-form.component.html',
-  styleUrls: ['./kyc-form.component.css']
-})
-export class KycFormComponent {
-  selectedFile: File | null = null;
-  customerId: number = 0;
-
-  constructor(private http: HttpClient) {}
-
-  onFileSelected(event: any) {
-    this.selectedFile = event.target.files[0];
-  }
-
-  submitKyc() {
-    if (!this.selectedFile || !this.customerId) return;
-
-    const formData = new FormData();
-    formData.append('file', this.selectedFile);
-    formData.append('customerId', this.customerId.toString());
-
-    this.http.post('http://localhost:8080/api/customer/submit-kyc', formData)
-      .subscribe(response => {
-        console.log('KYC submitted', response);
-      });
-  }
-}
 <div class="container mt-4">
   <h3>Submit KYC</h3>
   <div class="form-group">
