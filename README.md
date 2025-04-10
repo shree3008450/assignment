@@ -1,13 +1,24 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container-fluid">
-    <a class="navbar-brand" routerLink="/">KYC Portal</a>
-    <div class="collapse navbar-collapse">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a class="nav-link" routerLink="/register">Register</a></li>
-        <li class="nav-item"><a class="nav-link" routerLink="/submit-kyc">Submit KYC</a></li>
-        <li class="nav-item"><a class="nav-link" routerLink="/kyc-status">KYC Status</a></li>
-        <li class="nav-item"><a class="nav-link" routerLink="/admin">Admin</a></li>
-      </ul>
-    </div>
-  </div>
-</nav>
+package com.example.kyc.config; // make sure this matches your package name
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class WebConfig {
+
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/**")
+                        .allowedOrigins("http://localhost:4200")
+                        .allowedMethods("*")
+                        .allowedHeaders("*")
+                        .allowCredentials(true);
+            }
+        };
+    }
+}
