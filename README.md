@@ -1,12 +1,6 @@
-this.kycService.registerCustomer(this.customerForm.value).subscribe({
-  next: (res) => {
-    console.log('Registered:', res);
-    const customerId = res.customerId;
-    localStorage.setItem('customerId', customerId.toString()); // Save for later use
-    alert('Registered successfully! Customer ID: ' + customerId);
-  },
-  error: (err) => {
-    console.error('Error registering:', err);
-    alert('Registration failed');
-  }
-});
+@PostMapping("/submit-kyc")
+public ResponseEntity<String> submitkyc(@RequestParam Long customerId,
+                                        @RequestParam MultipartFile file) {
+    kycService.submitKyc(file, customerId);
+    return ResponseEntity.ok("KYC submitted successfully.");
+}
