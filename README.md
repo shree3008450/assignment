@@ -1,52 +1,56 @@
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-test</artifactId>
-    <scope>test</scope>
-</dependency>
-@Test
-void testRegisterCustomer() throws Exception {
-    CustomerDto customerDto = new CustomerDto("John", "john@mail.com", "123 St", "9876543210", LocalDate.of(1995, 5, 12));
+package org.example.Service;
 
-    mockMvc.perform(post("/api/customers")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(customerDto)))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").exists());
-}
-@Test
-void testSubmitKyc() throws Exception {
-    MockMultipartFile file = new MockMultipartFile("file", "document.pdf", "application/pdf", "dummy content".getBytes());
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.example.Exception.EmployeeAlreadyExistsException;
+import org.example.Exception.NoSuchEmployeeExistsException;
+import org.example.model.Employee;
+import org.example.repository.EmployeeRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-    mockMvc.perform(multipart("/api/customers/kyc")
-            .file(file)
-            .param("customerId", "1"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.message").value("KYC submitted successfully"));
-}
-@Test
-void testGetKycStatus() throws Exception {
-    mockMvc.perform(get("/api/customers/kyc-status/1"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.kycApplication").exists());
-}
-@Test
-void testGetPendingKycs() throws Exception {
-    mockMvc.perform(get("/api/admin/pending-kycs"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$").isArray());
-}
-@Test
-void testApproveKyc() throws Exception {
-    mockMvc.perform(put("/api/admin/kyc/1")
-            .param("status", "ACCEPTED"))
-            .andExpect(status().isOk())
-            .andExpect(content().string("KYC status updated successfully"));
-}
-@Test
-void testRejectKyc() throws Exception {
-    mockMvc.perform(put("/api/admin/kyc/1")
-            .param("status", "REJECTED"))
-            .andExpect(status().isOk())
-            .andExpect(content().string("KYC status updated successfully"));
-}
+import java.util.List;
+import java.util.Optional;
 
+@Service
+public class EmployeeServiceImpl implements EmployeeService {
+
+    private static final Logger log = LogManager.getLogger(EmployeeServiceImpl.class);
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    @Override
+    public Employee addEmployee(Employee employee) {
+        log.info("Adding employee: " + employee);
+        if (employeeRepository.findByMobileNo(employee.getMobileNo()).isPresent()) {
+            log.error("Employee with mobile number " + employee.getMobileNo() + " already exists");
+            throw new EmployeeAlreadyExistsException("Employee already exists!!");
+        }
+        return employeeRepository.save(employee);
+    }
+
+    @Override
+    public void deleteEmployee(Long id) {
+        if (!employeeRepository.existsById(id)) {
+            throw new NoSuchEmployeeExistsException("Employee with ID " + id + " not found");
+        }
+        employeeRepository.deleteById(id);
+    }
+
+    @Override
+    public Employee updateEmployee(Long id, Employee updatedEmployee) {
+        Employee existingEmployee = employeeRepository.findById(id)
+                .orElseThrow(() -> new NoSuchEmployeeExistsException("Employee not found with ID: " + id));
+        existingEmployee.setFirstName(updatedEmployee.getFirstName());
+        existingEmployee.setLastName(updatedEmployee.getLastName());
+        existingEmployee.setMobileNo(updatedEmployee.getMobileNo());
+        existingEmployee.setAge(updatedEmployee.getAge());
+        return employeeRepository.save(existingEmployee);
+    }
+
+    @Override
+    public List<Employee> getAllEmployees() {
+        return employeeRepository.findAll();
+    }
+}
