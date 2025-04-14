@@ -1,137 +1,23 @@
-package com.example.kyc;
+@Test
+void testGetAllApplications() throws Exception {
+    // Arrange: Mock data
+    KycResponseDto dto = new KycResponseDto();
+    dto.setId(1L);
+    dto.setStatus("APPROVED");
+    dto.setDocumentPath("uploads/kyc.pdf");
+    dto.setSubmittedAt(LocalDate.now());
+    dto.setCustomerName("John Doe");
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
+    List<KycResponseDto> kycList = List.of(dto);
 
-import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+    when(kycService.getAllApplications()).thenReturn(kycList);
 
-@SpringBootTest
-@AutoConfigureMockMvc
-public class BackendTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    private Long registerCustomer() throws Exception {
-        String customerJson = """
-            {
-                "name": "Test User",
-                "email": "testuser@example.com",
-                "address": "456 Lane",
-                "phoneNumber": "9876543210",
-                "dateOfBirth": "1990-01-01"
-            }
-        """;
-
-        MvcResult result = mockMvc.perform(post("/api/customer/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(customerJson))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.customerId").exists())
-                .andReturn();
-
-        String json = result.getResponse().getContentAsString();
-        JsonNode node = new ObjectMapper().readTree(json);
-        return node.get("customerId").asLong();
-    }
-
-    @Test
-    void testRegisterCustomer() throws Exception {
-        registerCustomer(); // Validated in helper method
-    }
-
-    @Test
-    void testSubmitKyc() throws Exception {
-        Long customerId = registerCustomer();
-
-        MockMultipartFile file = new MockMultipartFile(
-                "document", "kyc.pdf", MediaType.APPLICATION_PDF_VALUE, "Dummy file".getBytes());
-
-        mockMvc.perform(multipart("/api/kyc/submit/{customerId}", customerId)
-                        .file(file)
-                        .param("submittedDate", "2025-04-13"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("KYC submitted successfully."));
-    }
-
-    @Test
-    void testGetKycStatus() throws Exception {
-        Long customerId = registerCustomer();
-
-        MockMultipartFile file = new MockMultipartFile(
-                "document", "kyc.pdf", MediaType.APPLICATION_PDF_VALUE, "Dummy file".getBytes());
-
-        mockMvc.perform(multipart("/api/kyc/submit/{customerId}", customerId)
-                        .file(file)
-                        .param("submittedDate", "2025-04-13"))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(get("/api/customer/kyc-status/{id}", customerId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").exists());
-    }
-
-    @Test
-    void testApproveKyc() throws Exception {
-        Long customerId = registerCustomer();
-
-        MockMultipartFile file = new MockMultipartFile(
-                "document", "kyc.pdf", MediaType.APPLICATION_PDF_VALUE, "Dummy file".getBytes());
-
-        mockMvc.perform(multipart("/api/kyc/submit/{customerId}", customerId)
-                        .file(file)
-                        .param("submittedDate", "2025-04-13"))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(put("/api/admin/approve/{id}", customerId)
-                        .param("status", "APPROVED"))
-                .andExpect(status().isOk())
-                .andExpect(content().string("KYC status updated successfully"));
-    }
-
-    @Test
-    void testRejectKyc() throws Exception {
-        Long customerId = registerCustomer();
-
-        MockMultipartFile file = new MockMultipartFile(
-                "document", "kyc.pdf", MediaType.APPLICATION_PDF_VALUE, "Dummy file".getBytes());
-
-        mockMvc.perform(multipart("/api/kyc/submit/{customerId}", customerId)
-                        .file(file)
-                        .param("submittedDate", "2025-04-13"))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(put("/api/admin/reject/{id}", customerId)
-                        .param("status", "REJECTED"))
-                .andExpect(status().isOk())
-                .andExpect(content().string("KYC status updated successfully"));
-    }
-
-    @Test
-    void testGetAllApplications() throws Exception {
-        Long customerId = registerCustomer();
-
-        MockMultipartFile file = new MockMultipartFile(
-                "document", "kyc.pdf", MediaType.APPLICATION_PDF_VALUE, "Dummy file".getBytes());
-
-        mockMvc.perform(multipart("/api/kyc/submit/{customerId}", customerId)
-                        .file(file)
-                        .param("submittedDate", "2025-04-13"))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(get("/api/admin/all-applications"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].customer.id").value(customerId));
-    }
+    // Act & Assert
+    mockMvc.perform(get("/api/admin/all-applications"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.size()").value(1))
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[0].status").value("APPROVED"))
+            .andExpect(jsonPath("$[0].documentPath").value("uploads/kyc.pdf"))
+            .andExpect(jsonPath("$[0].customerName").value("John Doe"));
 }
