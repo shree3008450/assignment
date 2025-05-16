@@ -1,23 +1,24 @@
-@Test
-void testGetAllApplications() throws Exception {
-    // Arrange: Mock data
-    KycResponseDto dto = new KycResponseDto();
-    dto.setId(1L);
-    dto.setStatus("APPROVED");
-    dto.setDocumentPath("uploads/kyc.pdf");
-    dto.setSubmittedAt(LocalDate.now());
-    dto.setCustomerName("John Doe");
+isDuplicateDocument(newDocumentId: string): boolean {
+  const documentArray = this.documents.controls;
+  return documentArray.some(docCtrl => docCtrl.get('documentId')?.value === newDocumentId);
+}
+onAddDocument(): void {
+  // For demonstration, assume `newDocumentId` is fetched via modal or prefilled
+  const newDocumentId = prompt("Enter document ID to add");
 
-    List<KycResponseDto> kycList = List.of(dto);
+  if (!newDocumentId) return;
 
-    when(kycService.getAllApplications()).thenReturn(kycList);
+  if (this.isDuplicateDocument(newDocumentId)) {
+    this.toast.showToast(TOAST_STATE.WARNING, 'Duplicate Document', 'Document is already linked to same box');
+    this.toast.dismissToastAfterTimeOut();
+    return;
+  }
 
-    // Act & Assert
-    mockMvc.perform(get("/api/admin/all-applications"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.size()").value(1))
-            .andExpect(jsonPath("$[0].id").value(1))
-            .andExpect(jsonPath("$[0].status").value("APPROVED"))
-            .andExpect(jsonPath("$[0].documentPath").value("uploads/kyc.pdf"))
-            .andExpect(jsonPath("$[0].customerName").value("John Doe"));
+  // Add new FormGroup to FormArray with the document ID
+  const documentFormGroup = new FormGroup({
+    documentId: new FormControl(newDocumentId),
+    // ... other controls
+  });
+
+  this.documents.push(documentFormGroup);
 }
