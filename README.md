@@ -12,7 +12,6 @@ import com.sgcib.fdc.document.publish.provider.DataVaultRemoteClient;
 import com.sgcib.fdc.document.publish.provider.DocumentProvider;
 import com.sgcib.fdc.document.publish.provider.DocumentRetentionConfigProvider;
 import com.sgcib.fdc.document.publish.remote.document.response.DocumentResponse;
-import com.sgcib.fdc.document.publish.remote.document.response.RemoteBusinessObject;
 import com.sgcib.fdc.document.publish.service.enricher.Enricher;
 import com.sgcib.fdc.document.publish.service.handler.PathHandler;
 import com.sgcib.fdc.document.publish.service.handler.PathHandlerService;
@@ -77,51 +76,34 @@ public class PublishDataVaultStepDef {
 
     @Given("I am logged into the FDC application")
     public void iAmLoggedIntoTheFdcApplication() {
-        // No action needed, just a precondition
         System.out.println("User logged into the FDC application.");
     }
 
     @Given("I have the necessary permissions to publish documents")
     public void iHaveTheNecessaryPermissionsToPublishDocuments() {
-        // No action needed, just a precondition
         System.out.println("User has necessary permissions to publish documents.");
     }
 
     @Given("I have a document with Document ID {string} ready for publication")
     public void iHaveDocumentWithDocumentIdReadyForPublication(String documentIdString) {
-        // Create a complete RemoteBusinessObject with all required fields
-        List<RemoteBusinessObject> businessObjects = new ArrayList<>();
-        
-        // Create a complete business object that matches what's expected in toBusinessObject
-        RemoteBusinessObject businessObject = mock(RemoteBusinessObject.class);
-        when(businessObject.getOperationId()).thenReturn("OP123");
-        when(businessObject.getBusinessLines()).thenReturn(new ArrayList<>());
-        when(businessObject.getBookingEntities()).thenReturn(new ArrayList<>());
-        when(businessObject.toBusinessObject()).thenReturn(
-            BusinessObject.builder()
+        // Create a proper business object
+        BusinessObject businessObject = BusinessObject.builder()
                 .operationId("OP123")
                 .businessLines(new ArrayList<>())
                 .bookingEntities(new ArrayList<>())
-                .build()
-        );
+                .build();
         
-        businessObjects.add(businessObject);
-        
-        // Create a ready-to-use document that doesn't need conversion
+        // Create a pre-built document
         document = Document.builder()
                 .id(DOCUMENT_ID)
                 .name("Sample Document")
                 .documentType(DOCUMENT_TYPE_ID)
-                .businessObjects(Collections.emptyList())
+                .businessObjects(List.of(businessObject))
                 .documentContent(DocumentContent.builder().content(new byte[0]).build())
                 .build();
         
-        // Create document response that returns our pre-made document
+        // Create a fully mocked document response
         documentResponse = mock(DocumentResponse.class);
-        when(documentResponse.getId()).thenReturn(DOCUMENT_ID);
-        when(documentResponse.getName()).thenReturn("Sample Document");
-        when(documentResponse.getDocumentType()).thenReturn(DOCUMENT_TYPE_ID);
-        when(documentResponse.getBusinessObjects()).thenReturn(businessObjects);
         when(documentResponse.toDocument()).thenReturn(document);
                 
         // Create secure document
@@ -136,24 +118,25 @@ public class PublishDataVaultStepDef {
         // Configure mocks
         given(documentProvider.getDocumentById(DOCUMENT_ID)).willReturn(documentResponse);
         
-        given(retentionConfigProvider.getDocumentRetentionConfig(any()))
+        given(retentionConfigProvider.getDocumentRetentionConfig(any(UUID.class)))
                 .willReturn(Optional.of(SecureDocumentConfig.builder()
                         .documentTypeId(DOCUMENT_TYPE_ID)
                         .retentionDays(30)
                         .checkOnExecuted(false)
                         .build()));
                         
-        given(secureDocumentRepository.getAllByDocumentId(any()))
+        given(secureDocumentRepository.getAllByDocumentId(any(UUID.class)))
                 .willReturn(Collections.emptyList());
                 
-        given(documentEnricher.enrich(any())).willAnswer(invocation -> 
+        given(documentEnricher.enrich(any(DocumentContext.class))).willAnswer(invocation -> 
                 invocation.getArgument(0, DocumentContext.class));
                 
         // Mock PathHandlerService
         given(pathHandlerService.getGeneratedPath(any(PathObject.class))).willReturn(TEST_FOLDER_PATH);
         
-        // Mock service methods
+        // Mock service methods - use doNothing for void methods
         doNothing().when(secureDocumentService).publish(any(DocumentContext.class));
+        doNothing().when(documentValidator).validate(any(DocumentContext.class));
     }
 
     @When("I select that document and click on Publish")
@@ -164,7 +147,8 @@ public class PublishDataVaultStepDef {
         } catch (RuntimeException e) {
             exception = e;
             responseStatusCode = 500;
-            e.printStackTrace(); // Print stack trace for debugging
+            System.err.println("Exception occurred: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
