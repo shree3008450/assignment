@@ -40,7 +40,7 @@ public class PublishDataVaultStepDef {
     private static final int STATUS_CODE = 204;
     private static final String TEST_FOLDER_PATH = "/test/path";
 
-    // Mocks
+    // All mocks
     private final DocumentProvider documentProvider = mock(DocumentProvider.class);
     private final DocumentRetentionConfigProvider retentionConfigProvider = mock(DocumentRetentionConfigProvider.class);
     private final DocumentValidator documentValidator = mock(DocumentValidator.class);
@@ -49,15 +49,12 @@ public class PublishDataVaultStepDef {
     private final DataVaultRemoteClient dataVaultRemoteClient = mock(DataVaultRemoteClient.class);
     private final ApplicationEventPublisher applicationEventPublisher = mock(ApplicationEventPublisher.class);
     private final PathHandler pathHandler = mock(PathHandler.class);
-    private final PathHandlerService pathHandlerService = mock(PathHandlerService.class); // Use mock instead of real implementation
+    private final PathHandlerService pathHandlerService = mock(PathHandlerService.class);
+    private final SecureDocumentDeltaFilterService secureDocumentDeltaFilterService = mock(SecureDocumentDeltaFilterService.class);
+    private final SecureDocumentService secureDocumentService = mock(SecureDocumentService.class);
+    private final DocumentExecutionExceptionHandler documentExecutionExceptionHandler = mock(DocumentExecutionExceptionHandler.class);
     
-    // Service components
-    private final SecureDocumentPublisher secureDocumentPublisher = new SecureDocumentPublisher(applicationEventPublisher);
-    private final SecureDocumentDeltaFilterService secureDocumentDeltaFilterService = new SecureDocumentDeltaFilterService(secureDocumentRepository);
-    private final DocumentExecutionExceptionHandler documentExecutionExceptionHandler = new DocumentExecutionExceptionHandler(secureDocumentRepository);
-    
-    // Use spy for these services to control their behavior
-    private final SecureDocumentService secureDocumentService;
+    // Main service under test
     private final DocumentPublishService documentPublishService;
     
     // Test data
@@ -68,16 +65,7 @@ public class PublishDataVaultStepDef {
     private int responseStatusCode;
     
     public PublishDataVaultStepDef() {
-        // Initialize services in constructor to avoid null issues
-        secureDocumentService = spy(new SecureDocumentService(
-                pathHandlerService, 
-                documentEnricher, 
-                secureDocumentDeltaFilterService, 
-                dataVaultRemoteClient, 
-                secureDocumentRepository, 
-                secureDocumentPublisher
-        ));
-        
+        // Initialize main service in constructor
         documentPublishService = new DocumentPublishService(
                 documentProvider, 
                 retentionConfigProvider, 
@@ -90,11 +78,13 @@ public class PublishDataVaultStepDef {
     @Given("I am logged into the FDC application")
     public void iAmLoggedIntoTheFdcApplication() {
         // No action needed, just a precondition
+        System.out.println("User logged into the FDC application.");
     }
 
     @Given("I have the necessary permissions to publish documents")
     public void iHaveTheNecessaryPermissionsToPublishDocuments() {
         // No action needed, just a precondition
+        System.out.println("User has necessary permissions to publish documents.");
     }
 
     @Given("I have a document with Document ID {string} ready for publication")
@@ -148,14 +138,11 @@ public class PublishDataVaultStepDef {
         given(documentEnricher.enrich(any())).willAnswer(invocation -> 
                 invocation.getArgument(0, DocumentContext.class));
                 
-        // Mock PathHandlerService to return our test folder path
+        // Mock PathHandlerService
         given(pathHandlerService.getGeneratedPath(any(PathObject.class))).willReturn(TEST_FOLDER_PATH);
         
-        // Mock generateSecureDocuments to return our test secure document
-        doReturn(List.of(secureDocument)).when(secureDocumentService).generateSecureDocuments(any(Document.class));
-        
-        // Mock filter to return our secure document
-        doReturn(List.of(secureDocument)).when(secureDocumentDeltaFilterService).filter(any());
+        // Mock service methods
+        doNothing().when(secureDocumentService).publish(any(DocumentContext.class));
     }
 
     @When("I select that document and click on Publish")
@@ -175,6 +162,7 @@ public class PublishDataVaultStepDef {
         assertThat(exception).as("No exception should be thrown").isNull();
         verify(documentProvider).getDocumentById(DOCUMENT_ID);
         verify(documentValidator).validate(any(DocumentContext.class));
+        verify(secureDocumentService).publish(any(DocumentContext.class));
     }
 
     @Then("I should receive a response with status code {int}")
