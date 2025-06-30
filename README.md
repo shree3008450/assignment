@@ -89,22 +89,25 @@ public class PublishDataVaultStepDef {
 
     @Given("I have a document with Document ID {string} ready for publication")
     public void iHaveDocumentWithDocumentIdReadyForPublication(String documentIdString) {
-        // Create business objects for document
+        // Create a complete RemoteBusinessObject with all required fields
         List<RemoteBusinessObject> businessObjects = new ArrayList<>();
-        RemoteBusinessObject businessObject = RemoteBusinessObject.builder()
+        
+        // Create a complete business object that matches what's expected in toBusinessObject
+        RemoteBusinessObject businessObject = mock(RemoteBusinessObject.class);
+        when(businessObject.getOperationId()).thenReturn("OP123");
+        when(businessObject.getBusinessLines()).thenReturn(new ArrayList<>());
+        when(businessObject.getBookingEntities()).thenReturn(new ArrayList<>());
+        when(businessObject.toBusinessObject()).thenReturn(
+            BusinessObject.builder()
                 .operationId("OP123")
-                .build();
+                .businessLines(new ArrayList<>())
+                .bookingEntities(new ArrayList<>())
+                .build()
+        );
+        
         businessObjects.add(businessObject);
         
-        // Create document response
-        documentResponse = DocumentResponse.builder()
-                .id(DOCUMENT_ID)
-                .name("Sample Document")
-                .documentType(DOCUMENT_TYPE_ID)
-                .businessObjects(businessObjects)
-                .build();
-                
-        // Create document
+        // Create a ready-to-use document that doesn't need conversion
         document = Document.builder()
                 .id(DOCUMENT_ID)
                 .name("Sample Document")
@@ -112,6 +115,14 @@ public class PublishDataVaultStepDef {
                 .businessObjects(Collections.emptyList())
                 .documentContent(DocumentContent.builder().content(new byte[0]).build())
                 .build();
+        
+        // Create document response that returns our pre-made document
+        documentResponse = mock(DocumentResponse.class);
+        when(documentResponse.getId()).thenReturn(DOCUMENT_ID);
+        when(documentResponse.getName()).thenReturn("Sample Document");
+        when(documentResponse.getDocumentType()).thenReturn(DOCUMENT_TYPE_ID);
+        when(documentResponse.getBusinessObjects()).thenReturn(businessObjects);
+        when(documentResponse.toDocument()).thenReturn(document);
                 
         // Create secure document
         secureDocument = SecureDocument.builder()
